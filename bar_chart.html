@@ -17,19 +17,10 @@
     />
 
     <title>Hello, world!</title>
-    <style type="stylesheet">
-      #root {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100vw;
-        height: 100vh;
-      }
-    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="graph-display"></div>
 
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
@@ -40,20 +31,22 @@
           let x_axis_padding = 100;
           let y_axis_padding = 100;
 
-          let bar_number = data.length;
-          let bar_width = 10;
+          let bar_number = 280;
+          let bar_width = 6;
+
+          var color = ["#6b486b", "#a05d56", "#d0743c", "#ff8c00"];
 
           var xScale = d3
             .scaleLinear()
-            .domain([0, bar_number]) 
+            .domain([0, bar_number*bar_width]) 
             .range([0, width-(2*y_axis_padding)]);
 
-          const adjustedHeight = (val,set) =>{
-            return yScale(y_set_max - set[val][1]);
+          const adjustedHeight = (val) =>{
+            return yScale(y_set_max - val[1]);
           }
 
-          const adjustedX = (val) => {
-            return x_axis_padding +(bar_width*val); 
+          const adjustedX = (index) => {
+            return y_axis_padding+xScale((bar_width*index)); 
           }
 
           var yScale = d3
@@ -63,18 +56,23 @@
         
           console.log();
           var svg = d3
-            .select('#root')
+            .select('#graph-display')
             .append("svg")
             .attr("width", `${width}px`)
             .attr("height", `${height}px`)
-            .style("background-color", "lightblue");
+            .classed("graph", true)
 
-             svg
+          svg.selectAll('rect')
+             .data(data)
+             .enter()
              .append("rect")
-             .attr('x',adjustedX(0))
-             .attr('width',bar_width)
-             .attr('y', height - adjustedHeight(0,data) - x_axis_padding )//height - (x_axis_padding+yScale(set_max - data[0][1]))
-             .attr('height', adjustedHeight(0,data));
+             .attr('x', (d,i) => adjustedX(i))//i
+             .attr('width',bar_width)     //d
+             .attr('y', (d) => height - adjustedHeight(d) - x_axis_padding )//height - (x_axis_padding+yScale(set_max - data[0][1]))
+             .attr('height', (d) => adjustedHeight(d))
+             .style("fill", function(d, i) {
+                return data[i-1]>d?'#EE9E56':'#009ADE';
+              })
 
             svg
             .append("g")
@@ -94,10 +92,28 @@
             return response.json();
           })
           .then(function (response) {
-            console.log(response.data);
-            initGraph(1010, 900,response.data);
+            response.data.forEach((point,i)=>{
+              console.log(point,i)
+            })
+            initGraph(1210, 700,response.data);
           });
       });
     </script>
+        <style type="stylesheet">
+          #root {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+          }
+          
+          .graph {
+           fill: beige;
+          }
+          .bar{
+            fill: cadetblue;
+          }
+        </style>
   </body>
 </html>
