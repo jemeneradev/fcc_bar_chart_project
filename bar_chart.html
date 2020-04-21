@@ -160,7 +160,8 @@
       };
 
       window.addEventListener("DOMContentLoaded", function () {
-        let myRequest = new Request("./data.json");
+        let gqp_data = "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json"
+        let myRequest = new Request(gqp_data);
         fetch(myRequest)
           .then(function (response) {
             return response.json();
