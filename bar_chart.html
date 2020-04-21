@@ -23,67 +23,113 @@
     <div id="graph-display"></div>
 
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
     <script>
-      const initGraph = (width = 500, height = 500,data=[]) => {
-          // create svg element
-          let y_set_max = 20000;
-          
-          let x_axis_padding = 100;
-          let y_axis_padding = 100;
-
-          let bar_number = 280;
-          let bar_width = 6;
-
-          var color = ["#6b486b", "#a05d56", "#d0743c", "#ff8c00"];
-
-          var xScale = d3
-            .scaleLinear()
-            .domain([0, bar_number*bar_width]) 
-            .range([0, width-(2*y_axis_padding)]);
-
-          const adjustedHeight = (val) =>{
-            return yScale(y_set_max - val[1]);
-          }
-
-          const adjustedX = (index) => {
-            return y_axis_padding+xScale((bar_width*index)); 
-          }
-
-          var yScale = d3
-            .scaleLinear()
-            .domain([y_set_max,0]) 
-            .range([0,height-(2*x_axis_padding)]);
+      const initGraph = (width = 500, height = 500, data = []) => {
+        // create svg element
+        let years = {}
+        data.forEach((point, i) => {
+          years[point[0].split('-')[0]] = 1
+              //console.log(point[0].split('-')[0], i);
+        });
+        let sortedYears = Object.keys(years).map((el=>parseInt(el))).sort();
         
-          console.log();
-          var svg = d3
-            .select('#graph-display')
-            .append("svg")
-            .attr("width", `${width}px`)
-            .attr("height", `${height}px`)
-            .classed("graph", true)
+        
+        const pointYear = (point)=>{
+          let sections = point[0].split('-')
+          quarterIndex = {1:0,4:1,7:2,10:3}
+          return [parseInt(sections[0]),quarterIndex[parseInt(sections[1])]] //?Year,Quarter
+        }
+        var Quarters = ["#009ADE", "#FECD6A", "#7FB4A4", "#DD6E42"];
 
-          svg.selectAll('rect')
-             .data(data)
-             .enter()
-             .append("rect")
-             .attr('x', (d,i) => adjustedX(i))//i
-             .attr('width',bar_width)     //d
-             .attr('y', (d) => height - adjustedHeight(d) - x_axis_padding )//height - (x_axis_padding+yScale(set_max - data[0][1]))
-             .attr('height', (d) => adjustedHeight(d))
-             .style("fill", function(d, i) {
-                return data[i-1]>d?'#EE9E56':'#009ADE';
-              })
+        let y_set_max = 20000;
 
-            svg
-            .append("g")
-            .attr("transform", `translate(${x_axis_padding},${height-y_axis_padding})`)    
-            .call(d3.axisBottom(xScale));
+        let x_axis_padding = 100;
+        let y_axis_padding = 100;
 
-            svg
-            .append("g")
-            .attr("transform", `translate(${y_axis_padding},${x_axis_padding})`)
-            .call(d3.axisLeft(yScale));
+        let bar_number = sortedYears.length;
+        let x_axis_length = width - 2 * y_axis_padding
+        let bar_width = (x_axis_length/sortedYears.length)/Quarters.length;
+        //console.log(sortedYears.map((el)=>el%10===0? el:0).filter((el)=>el>0),sortedYears.length/(width - 2 * y_axis_padding))
+        console.log(bar_width)
+        
+
+        var xScale = d3
+          .scaleLinear()
+          .domain([sortedYears[0],sortedYears[sortedYears.length-1]+1])// bar_number * bar_width])
+          .range([0, width - 2 * y_axis_padding]);
+
+        const adjustedHeight = (val) => {
+          return yScale(y_set_max - val[1]);
         };
+
+        const adjustedX = (record) => {
+          console.log(record)
+          return y_axis_padding + xScale(record[0]) + (bar_width*record[1])//y_axis_padding + xScale(bar_width * index[0]);
+        };
+
+        var yScale = d3
+          .scaleLinear()
+          .domain([y_set_max, 0])
+          .range([0, height - 2 * x_axis_padding]);
+
+        console.log(data);
+        var svg = d3
+          .select("#graph-display")
+          .append("svg")
+          .attr("width", `${width}px`)
+          .attr("height", `${height}px`)
+          .classed("graph", true);
+
+
+        let temp = [["1985-01-01",4000],["1985-04-01",8000],["1985-07-01",13000],["1985-10-01",17000],
+                    ["1986-01-01",4000],["1986-04-01",8000],["1986-07-01",13000],["1986-10-01",17000],
+                    ["1987-01-01",4000],["1987-04-01",8000],["1987-07-01",13000],["1987-10-01",17000],
+                    ["1988-01-01",4000],["1988-04-01",8000],["1988-07-01",13000],["1988-10-01",17000],
+                    ["1989-01-01",4000],["1989-04-01",8000],["1989-07-01",13000],["1989-10-01",17000]
+                    ];//["1990-01-01",4000],["1990-04-01",8000],["1990-07-01",13000],["1990-10-01",17000]
+        svg
+          .selectAll("rect")
+          .data(data)
+          .enter()
+          .append("rect")
+          .attr("x", (d, i) => adjustedX(pointYear(d)))//adjustedX(i)) //i
+          .attr("width", bar_width) //d
+          .attr("y", (d) => height - adjustedHeight(d) - x_axis_padding) //height - (x_axis_padding+yScale(set_max - data[0][1]))
+          .attr("height", (d) => adjustedHeight(d))
+          .style("fill", function (d, i) {
+            return Quarters[pointYear(d)[1]]
+          });
+
+        svg
+          .append("g")
+          .attr(
+            "transform",
+            `translate(${x_axis_padding},${height - y_axis_padding})`
+          )
+          .call(
+            d3
+            .axisBottom(xScale)
+            .tickValues(sortedYears.map((el)=>el%5===0? el:0).filter((el)=>el>0))
+            .tickFormat(d3.format("i")));
+          
+        svg
+          .append("g")
+          .attr("transform", `translate(${y_axis_padding},${x_axis_padding})`)
+          .call(d3.axisLeft(yScale));
+
+          svg.append("g")
+          .attr(
+            "transform",
+            `translate(${width*(.58)},${height*(.1)})`
+          )
+          .attr('id','title')
+          .attr('text-anchor','end')
+          .attr('font-family','sans-serif')
+          .append('text')
+          .style('font-size',20)
+          .text('U.S. Gross Domestic Product')
+      };
 
       window.addEventListener("DOMContentLoaded", function () {
         let myRequest = new Request("./data.json");
@@ -92,28 +138,27 @@
             return response.json();
           })
           .then(function (response) {
-            response.data.forEach((point,i)=>{
-              console.log(point,i)
-            })
-            initGraph(1210, 700,response.data);
+            
+            console.log()
+            initGraph(1200, 700, response.data);
           });
       });
     </script>
-        <style type="stylesheet">
-          #root {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100vw;
-            height: 100vh;
-          }
-          
-          .graph {
-           fill: beige;
-          }
-          .bar{
-            fill: cadetblue;
-          }
-        </style>
+    <style type="stylesheet">
+      #root {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .graph {
+        fill: beige;
+      }
+      .bar {
+        fill: cadetblue;
+      }
+    </style>
   </body>
 </html>
