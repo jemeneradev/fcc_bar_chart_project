@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+
+    <title>Hello, world!</title>
+  </head>
+
+  <body>
+    <div id="graph-display"></div>
+
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+    <script>
+      const initGraph = (width = 500, height = 500, data = []) => {
+        // create svg element
+        let years = {};
+        data.forEach((point) => {
+          years[point["Year"]] = 1;
+          //console.log(point);
+        });
+
+        let sortedYears = Object.keys(years)
+          .map((el) => parseInt(el))
+          .sort();
+
+        let x_axis_padding = 100;
+        let y_axis_padding = 100;
+
+        let bar_number = sortedYears.length;
+        let x_axis_length = width - 2 * y_axis_padding;
+
+        var xScale = d3
+          .scaleLinear()
+          .domain([sortedYears[0] - 1, sortedYears[sortedYears.length - 1] + 2]) // bar_number * bar_width])
+          .range([0, width - 2 * y_axis_padding]);
+
+        const adjustedSecs = (val) => {
+          return yScale(val);
+        };
+
+        const adjustedX = (record) => {
+          //console.log(record)
+          return y_axis_padding + xScale(record[0]) + bar_width * record[1]; //y_axis_padding + xScale(bar_width * index[0]);
+        };
+
+        const minsecFormat = d => {
+          let secs = d%60;
+          let ds = `${secs}`
+          if (secs <= 9) {
+            ds = `0${secs}` 
+          }
+          return `${parseInt(d/60)}:${ds}`
+        };
+        const minsecDataFormat = d => {
+          let secs = d.Seconds%60;
+          let ds = `${secs}`
+          if (secs <= 9) {
+            ds = `0${secs}` 
+          }
+          return `${parseInt(d.Seconds/60)}:${ds}`
+        }
+        var yScale = d3
+          .scaleTime()
+          .domain([new Date(0,0,0,0,40,0), new Date(0,0,0,0,36,0)])
+          .range([0, height - 2 * x_axis_padding]);
+
+        var svg = d3
+          .select("#graph-display")
+          .append("svg")
+          .attr("width", `${width}px`)
+          .attr("height", `${height}px`)
+          .classed("graph", true);
+
+        console.log(data);
+        let temp = [{ Time: "34:50", Year: 2004 }];
+
+        const tToDate = (d) => {
+          let el = d.Time.split(':'); 
+          return (new Date(0,0,0,0,parseInt(el[0]),parseInt(el[1])))
+        }
+
+        svg
+          .selectAll("circle")
+          .data(data)
+          .enter()
+          .append("circle")
+          .attr("class", "dot")
+          .attr("data-xvalue", (d) => d.Year)
+          .attr("data-yvalue", d => tToDate(d))
+          .attr("cx", (d) => y_axis_padding + xScale(d.Year)) //adjustedX(i)) //i
+          .attr("cy", (d) => x_axis_padding + yScale(tToDate(d))) //height - adjustedHeight(dateToSecs(d.Time)) - x_axis_padding)
+          .attr("r", 3)
+          .on("mouseenter", (d) => {
+              console.log(d)
+              let tooltip = d3.select('#tooltip')
+              .attr("transform",`translate(${y_axis_padding + xScale(d.Year)+10},${x_axis_padding + yScale(tToDate(d))-10})`)//
+
+              tooltip.attr('data-year',d.Year)
+              tooltip.select("#tooltip_info").text(d.Year)
+              tooltip.style("visibility", "visible")
+           })
+           .on("mouseleave", (d) => {
+              let tooltip = d3.select('#tooltip') 
+              tooltip.style("visibility", "hidden")
+           });
+
+        svg
+          .append("g")
+          .attr("id", "x-axis")
+          .attr(
+            "transform",
+            `translate(${x_axis_padding},${height - y_axis_padding})`
+          )
+          .call(d3.axisBottom(xScale).tickFormat(d3.format("i")));
+
+        svg
+          .append("g")
+          .attr("id", "y-axis")
+          .attr("transform", `translate(${y_axis_padding},${x_axis_padding})`)
+          .call(d3.axisLeft(yScale).tickFormat(d3.timeFormat("%M:%S")));
+
+        svg
+          .append("g")
+          .attr("transform", `translate(${width * 0.58},${height * 0.1})`)
+          .attr("id", "title")
+          .attr("text-anchor", "end")
+          .attr("font-family", "sans-serif")
+          .append("text")
+          .style("font-size", 20)
+          .text("Tour De France Doping Cases");
+
+        svg
+          .append("g")
+          .attr("transform", `translate(${width * 0.58},${height * 0.8})`)
+          .attr("id", "tooltip")
+          .attr("text-anchor", "end")
+          .attr("font-family", "sans-serif")
+          .attr('data-year',"0")
+          .append('text')
+          .attr('id','tooltip_info')
+
+        svg
+          .append("g")
+          .attr("transform", `translate(${width * 0.78},${height * 0.95})`)
+          .attr("id", "legend")
+          .attr("text-anchor", "end")
+          .attr("font-family", "sans-serif")
+          .attr('data-year',"0")
+          .append('text')
+          .text("Doping cases by Times/Year")
+      };
+
+      window.addEventListener("DOMContentLoaded", function () {
+        let myRequest = new Request("https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json");
+        fetch(myRequest)
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (response) {
+            //console.log(response)
+            initGraph(1200, 700, response);
+          });
+      });
+    </script>
+    <style type="stylesheet">
+      #root {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </body>
+</html>
